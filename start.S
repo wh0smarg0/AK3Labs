@@ -4,10 +4,11 @@
 
 // Global memory locations.
 .global vtable
-.global reset_handler
+.global _hard_reset
 
 /* vector table */
 .type vtable, %object
+.type _hard_reset, %function
 vtable:
 .word _stack_start
 .word _hard_reset + 1
@@ -16,4 +17,8 @@ vtable:
 _hard_reset:
 ldr r0, =_stack_start
 mov sp, r0
-b _hard_reset
+
+bl lab1
+_loop: b _loop
+
+.size _hard_reset, .-_hard_reset

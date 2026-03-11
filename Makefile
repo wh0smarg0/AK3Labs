@@ -12,13 +12,15 @@ TCP_ADDR = 1234
 
 deps = \
 start.S \
+lab1.S \
 lscript.ld
 
 all: target
 
 target:
 	$(CC) -x assembler-with-cpp -c -O0 -g3 -mcpu=$(CPU_CC) -Wall start.S -o start.o
-	$(CC) start.o -mcpu=$(CPU_CC) -Wall --specs=nosys.specs -nostdlib -lgcc -T./lscript.ld -o $(TARGET).elf
+	$(CC) -x assembler-with-cpp -c -O0 -g3 -mcpu=$(CPU_CC) -Wall lab1.S -o lab1.o
+	$(CC) start.o lab1.o -mcpu=$(CPU_CC) -Wall --specs=nosys.specs -nostdlib -lgcc -T./lscript.ld -o $(TARGET).elf
 
 qemu:
 	$(OBJCOPY) -O binary -F elf32-littlearm $(TARGET).elf $(TARGET).bin

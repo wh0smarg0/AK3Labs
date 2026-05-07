@@ -167,7 +167,6 @@ void CS43L22_Beep(soundToneType pitch, uint32_t duration_ms, uint16_t led_pin)
 {
     uint8_t TxBuffer[2];
 
-    // СВІТЛОМУЗИКА: Вмикаємо переданий світлодіод на порту D
     HAL_GPIO_WritePin(GPIOD, led_pin, GPIO_PIN_SET);
 
     // Set volume and off time
@@ -196,6 +195,41 @@ void CS43L22_Beep(soundToneType pitch, uint32_t duration_ms, uint16_t led_pin)
     // СВІТЛОМУЗИКА: Вимикаємо світлодіод після завершення ноти
     HAL_GPIO_WritePin(GPIOD, led_pin, GPIO_PIN_RESET);
 }
+
+typedef struct {
+    soundToneType note;      // Нота
+    uint32_t duration_ms;    // Тривалість
+    uint16_t led_pin;        // Який діод світити
+} MelodyStep;
+
+MelodyStep my_melody[] = {
+		// Перша частина
+		    {NOTE_6, 300, GPIO_PIN_12}, {NOTE_6, 300, GPIO_PIN_13},
+		    {NOTE_7, 300, GPIO_PIN_14}, {NOTE_9, 300, GPIO_PIN_15},
+		    {NOTE_9, 300, GPIO_PIN_15}, {NOTE_7, 300, GPIO_PIN_14},
+		    {NOTE_6, 300, GPIO_PIN_13}, {NOTE_4, 300, GPIO_PIN_12},
+		    {NOTE_2, 300, GPIO_PIN_12}, {NOTE_2, 300, GPIO_PIN_13},
+		    {NOTE_4, 300, GPIO_PIN_14}, {NOTE_6, 300, GPIO_PIN_15},
+		    {NOTE_6, 450, GPIO_PIN_14}, {NOTE_4, 150, GPIO_PIN_13},
+		    {NOTE_4, 600, GPIO_PIN_12}, // Кінець першого рядка
+
+		    // Пауза між рядками (тиша, діоди вимкнені)
+		    {MAX_VALUE, 50, 0x0000},
+
+		    // Друга частина
+		    {NOTE_6, 300, GPIO_PIN_12}, {NOTE_6, 300, GPIO_PIN_13},
+		    {NOTE_7, 300, GPIO_PIN_14}, {NOTE_9, 300, GPIO_PIN_15},
+		    {NOTE_9, 300, GPIO_PIN_15}, {NOTE_7, 300, GPIO_PIN_14},
+		    {NOTE_6, 300, GPIO_PIN_13}, {NOTE_4, 300, GPIO_PIN_12},
+		    {NOTE_2, 300, GPIO_PIN_12}, {NOTE_2, 300, GPIO_PIN_13},
+		    {NOTE_4, 300, GPIO_PIN_14}, {NOTE_6, 300, GPIO_PIN_15},
+		    {NOTE_4, 450, GPIO_PIN_14}, {NOTE_2, 150, GPIO_PIN_13},
+
+		    // Фінальний акорд (довга нота + світяться всі діоди!)
+		    {NOTE_2, 800, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15}
+};
+
+#define MELODY_LENGTH (sizeof(my_melody) / sizeof(my_melody[0]))
 
 /* USER CODE END 0 */
 
@@ -233,11 +267,13 @@ int main(void)
   MX_I2S3_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)dataI2S, 100);
+
   // Init DAC
   CS43L22_Init();
 
   // Transmit empty data
-  HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)dataI2S, 100);
+  //HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t *)dataI2S, 100);
 
   // Змінна-лічильник для обмеження кількості програвань
   uint8_t play_count = 0;
@@ -251,24 +287,30 @@ int main(void)
 	  // Перевірка: грати тільки якщо лічильник менше 3
 	  if (play_count < 3)
 	  {
+		  for (int i = 0; i < MELODY_LENGTH; i++)
+		  {
+			  CS43L22_Beep(my_melody[i].note, my_melody[i].duration_ms, my_melody[i].led_pin);
+			  HAL_Delay(50); // Коротка пауза для розділення нот
+		  }
+
 		  // ПРОГРАВАННЯ МЕЛОДІЇ ЗІ СВІТЛОДІОДАМИ
-		  CS43L22_Beep(NOTE_0, 300, GPIO_PIN_12); // Зелений
-		  HAL_Delay(50); // Коротка пауза, щоб ноти не зливалися
+		  //CS43L22_Beep(NOTE_0, 300, GPIO_PIN_12); // Зелений
+		  //HAL_Delay(50); // Коротка пауза, щоб ноти не зливалися
 
-		  CS43L22_Beep(NOTE_3, 300, GPIO_PIN_13); // Помаранчевий
-		  HAL_Delay(50);
+		  //CS43L22_Beep(NOTE_3, 300, GPIO_PIN_13); // Помаранчевий
+		  //HAL_Delay(50);
 
-		  CS43L22_Beep(NOTE_7, 300, GPIO_PIN_14); // Червоний
-		  HAL_Delay(50);
+		  //CS43L22_Beep(NOTE_7, 300, GPIO_PIN_14); // Червоний
+		  //HAL_Delay(50);
 
-		  CS43L22_Beep(NOTE_12, 600, GPIO_PIN_15); // Синій (довга нота)
-		  HAL_Delay(50);
+		  //CS43L22_Beep(NOTE_12, 600, GPIO_PIN_15); // Синій (довга нота)
+		  //HAL_Delay(50);
 
-		  CS43L22_Beep(NOTE_7, 300, GPIO_PIN_14); // Червоний
-		  HAL_Delay(50);
+		  //CS43L22_Beep(NOTE_7, 300, GPIO_PIN_14); // Червоний
+		  //HAL_Delay(50);
 
 		  // Фінальний акорд: світяться всі 4 діоди!
-		  CS43L22_Beep(NOTE_0, 800, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15);
+		  //CS43L22_Beep(NOTE_0, 800, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15);
 
 		  HAL_Delay(1000); // Пауза 1 секунда між повторами мелодії
 		  play_count++;    // Збільшуємо лічильник на 1
